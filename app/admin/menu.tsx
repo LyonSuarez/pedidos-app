@@ -3,10 +3,12 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const opciones = [
-  { label: 'Clientes', ruta: 'ver-clientes' },
-  { label: 'Modificar Precios', ruta: 'modificar-precios' },
-  { label: 'Ver Pedidos', ruta: 'ver-pedidos' },
-  { label: 'Configuración General', ruta: 'configuracion' },
+  { label: 'Productos', ruta: 'productos' },           // Alta de productos para los pedidos
+  { label: 'Ver Pedidos', ruta: 'pedidos' },       // Ver pedidos realizados por clientes
+  { label: 'Precios', ruta: 'modificar-precios' },     // Modificar precios de productos
+  { label: 'Clientes', ruta: 'ver-clientes' },         // Añadir, buscar y editar clientes
+  { label: 'Proveedores', ruta: 'proveedores' },       // Info de proveedores y vinculación con productos
+  { label: 'Configuración', ruta: 'configuracion' },   // Modificar datos del admin
 ];
 
 export default function MenuAdmin() {
