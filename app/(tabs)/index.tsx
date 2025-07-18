@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Feliz cunmple Nancy👏</Text>
+      <Text style={styles.text}>VERSION 1.0</Text>
     </View>
   );
 }
@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    color: '#f8fafc',
+    color: '#ff00ffff',
     fontSize: 20,
   },
 });
