@@ -99,7 +99,7 @@ const Productos = () => {
       descripcion: datosEditables.descripcion,
       descripcionCorta: datosEditables.descripcionCorta,
       tipoMoneda: datosEditables.tipoMoneda,
-      precio: parseFloat(datosEditables.precio),
+      precio: parseFloat(parseFloat(datosEditables.precio).toFixed(2)),
       proveedorId: datosEditables.proveedorId,
     });
     setModoEdicion(null);
@@ -182,7 +182,7 @@ const Productos = () => {
                   <TextInput
                     style={styles.inputBusqueda}
                     value={String(datosEditables.precio)}
-                    onChangeText={text => setDatosEditables({ ...datosEditables, precio: text })}
+                    onChangeText={text => setDatosEditables({ ...datosEditables, precio: text.replace(',', '.') })}
                     keyboardType="numeric"
                     placeholder="Precio"
                   />
@@ -208,14 +208,20 @@ const Productos = () => {
                 <>
                   <Text style={styles.infoTexto}>{item.descripcion}</Text>
                   <Text style={styles.infoTexto}>Moneda: {item.tipoMoneda}</Text>
-                  <Text style={styles.infoTexto}>Precio: ${item.precio}</Text>
-                  <Text style={styles.infoTexto}>Precio ARS: ${precioARS.toLocaleString('es-AR')}</Text>
+                  <Text style={styles.infoTexto}>Precio: ${item.precio.toFixed(2)}</Text>
+                  <Text style={styles.infoTexto}>Precio ARS: {precioARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                   <Text style={styles.infoTexto}>Proveedor: {proveedor?.nombre || item.proveedorId}</Text>
                   <TouchableOpacity
                     style={styles.botonEditar}
                     onPress={() => {
                       setModoEdicion(item.id);
-                      setDatosEditables(item);
+                      setDatosEditables({
+                        descripcion: item.descripcion,
+                        descripcionCorta: item.descripcionCorta,
+                        tipoMoneda: item.tipoMoneda,
+                        precio: item.precio.toFixed(2),
+                        proveedorId: item.proveedorId,
+                      });
                     }}
                   >
                     <Text style={styles.textoBotonEditar}>EDITAR</Text>

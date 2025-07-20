@@ -1,95 +1,109 @@
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
-import {
-  Alert,
-  Button,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from 'react-native';
-import { autenticarUsuarioAdmin, autenticarUsuarioCliente } from '../lib/auth';
+import { ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import * as Animatable from 'react-native-animatable';
 
-export default function LoginScreen() {
+export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
-  const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert('Error', 'Por favor ingresá usuario y contraseña');
-      return;
-    }
-
-    // Intentar login como ADMIN
-    const esAdmin = await autenticarUsuarioAdmin(username, password);
-    if (esAdmin) {
-      router.push({ pathname: '../admin', params: { username } });
-      return;
-    }
-
-    // Si no es admin, intentar login como CLIENTE
-    const cliente = await autenticarUsuarioCliente(username, password);
-    if (cliente) {
-      router.push({ pathname: '../cliente/menu', params: { username } });
-    } else {
-      Alert.alert('Error', 'Usuario o contraseña incorrectos');
-    }
+  const handleLogin = () => {
+    router.push('/admin/menu');
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Inicio de Sesión</Text>
+    <ImageBackground
+      source={require('../assets/menu/fondoapp.png')}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <Animatable.Text animation="fadeInDown" duration={800} style={styles.titulo}>
+        Inicio de Sesión
+      </Animatable.Text>
 
-      <Text style={styles.label}>USUARIO</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ingresá tu usuario"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-        placeholderTextColor="#aaa"
-      />
+      <Animatable.View animation="fadeInUp" delay={300} duration={900} style={styles.cuadro}>
+        <Text style={styles.label}>USUARIO</Text>
+        <TextInput
+          placeholder="Ingresá tu usuario"
+          placeholderTextColor="#888"
+          value={username}
+          onChangeText={setUsername}
+          style={styles.input}
+        />
 
-      <Text style={styles.label}>CONTRASEÑA</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ingresá tu contraseña"
-        secureTextEntry={!showPassword}
-        value={password}
-        onChangeText={setPassword}
-        autoCapitalize="none"
-        placeholderTextColor="#aaa"
-      />
+        <Text style={styles.label}>CONTRASEÑA</Text>
+        <TextInput
+          placeholder="Ingresá tu contraseña"
+          placeholderTextColor="#888"
+          secureTextEntry={!mostrarPassword}
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+        />
 
-      <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-        <Text style={styles.toggle}>
-          {showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => setMostrarPassword(!mostrarPassword)}>
+          <Text style={styles.ver}>Ver contraseña</Text>
+        </TouchableOpacity>
 
-      <Button title="INGRESAR" onPress={handleLogin} />
-    </View>
+        <TouchableOpacity style={styles.boton} onPress={handleLogin}>
+          <Text style={styles.textoBoton}>INGRESAR</Text>
+        </TouchableOpacity>
+      </Animatable.View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#000' },
-  title: { fontSize: 26, color: '#fff', textAlign: 'center', marginBottom: 30 },
-  label: { color: '#fff', fontSize: 16, marginBottom: 5 },
+  background: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  titulo: {
+    color: 'white',
+    fontSize: 26,
+    fontWeight: 'bold',
+    backgroundColor: 'black',
+    alignSelf: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    marginBottom: 20,
+  },
+  cuadro: {
+    backgroundColor: 'black',
+    padding: 25,
+    marginHorizontal: 20,
+    borderRadius: 5,
+  },
+  label: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginBottom: 6,
+    marginTop: 12,
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#fff',
-    padding: 10,
-    marginBottom: 10,
+    borderColor: 'white',
     borderRadius: 5,
-    color: '#fff'
+    color: 'white',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  toggle: {
-    color: '#1E90FF',
-    textAlign: 'right',
-    marginBottom: 20
-  }
+  ver: {
+    alignSelf: 'flex-end',
+    color: '#3399FF',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  boton: {
+    backgroundColor: '#3399FF',
+    padding: 14,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  textoBoton: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 });
+

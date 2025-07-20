@@ -38,6 +38,7 @@ export default function CargarProductosScreen() {
     proveedorId: '',
     imagen: '',
   });
+  const [precioTexto, setPrecioTexto] = useState('');
 
   const [proveedores, setProveedores] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -54,26 +55,38 @@ export default function CargarProductosScreen() {
   }, []);
 
   const seleccionarImagen = async () => {
-  const resultado = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'], // ✅ sin warning, nueva forma
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 1,
-  });
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
 
-  if (!resultado.canceled && resultado.assets?.[0]?.uri) {
-    setProducto({ ...producto, imagen: resultado.assets[0].uri });
-  }
-};
+    if (!resultado.canceled && resultado.assets?.[0]?.uri) {
+      setProducto({ ...producto, imagen: resultado.assets[0].uri });
+    }
+  };
 
   const guardarProducto = async () => {
     if (!producto.codigo || !producto.descripcionCorta || !producto.descripcion || !producto.tipoMoneda || !producto.precio || !producto.proveedorId) {
       Alert.alert('Error', 'Por favor, completá todos los campos obligatorios.');
       return;
     }
-    await addDoc(collection(db, 'productos'), producto);
+
+    // Verificamos si ya existe un producto con ese mismo código
+    const snapshot = await getDocs(collection(db, 'productos'));
+    const existeCodigo = snapshot.docs.some(doc => doc.data().codigo === producto.codigo);
+
+    if (existeCodigo) {
+      Alert.alert('Error', 'El código que trata de usar ya fue asignado a un artículo.');
+      return;
+    }
+
+    const precioFormateado = parseFloat(producto.precio.toFixed(2));
+    await addDoc(collection(db, 'productos'), { ...producto, precio: precioFormateado });
     Alert.alert('Éxito', 'Producto guardado correctamente.');
     setProducto({ codigo: '', descripcionCorta: '', descripcion: '', tipoMoneda: 'DOLAR', precio: 0, proveedorId: '', imagen: '' });
+    setPrecioTexto('');
   };
 
   const verFormatoExcel = () => {
@@ -119,7 +132,7 @@ export default function CargarProductosScreen() {
           descripcionCorta: item.descripcionCorta,
           descripcion: item.descripcion,
           tipoMoneda: item.tipoMoneda,
-          precio: Number(item.precio),
+          precio: parseFloat(item.precio.toString().replace(',', '.')),
           proveedorId: item.proveedorId,
           imagen: item.imagen || '',
         });
@@ -135,7 +148,8 @@ export default function CargarProductosScreen() {
 
   const confirmarImportacion = async () => {
     for (const prod of archivoProductos) {
-      await addDoc(collection(db, 'productos'), prod);
+      const precioFormateado = parseFloat(prod.precio.toFixed(2));
+      await addDoc(collection(db, 'productos'), { ...prod, precio: precioFormateado });
     }
     Alert.alert('Éxito', 'Productos importados correctamente.');
     setModalVisible(false);
@@ -145,37 +159,65 @@ export default function CargarProductosScreen() {
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <Text style={styles.titulo}>CARGAR PRODUCTO</Text>
 
-      <TextInput style={styles.input} placeholder="CODIGO" placeholderTextColor="#aaa" value={producto.codigo} onChangeText={text => setProducto({ ...producto, codigo: text })} />
-      <TextInput style={styles.input} placeholder="DESCRIPCION CORTA" placeholderTextColor="#aaa" value={producto.descripcionCorta} onChangeText={text => setProducto({ ...producto, descripcionCorta: text })} />
-      <TextInput style={styles.input} placeholder="DESCRIPCION" placeholderTextColor="#aaa" value={producto.descripcion} onChangeText={text => setProducto({ ...producto, descripcion: text })} />
+      <TextInput
+        style={styles.input}
+        placeholder="CODIGO"
+        placeholderTextColor="#aaa"
+        value={producto.codigo}
+        onChangeText={text => setProducto({ ...producto, codigo: text })}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="DESCRIPCION CORTA"
+        placeholderTextColor="#aaa"
+        value={producto.descripcionCorta}
+        onChangeText={text => setProducto({ ...producto, descripcionCorta: text })}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="DESCRIPCION"
+        placeholderTextColor="#aaa"
+        value={producto.descripcion}
+        onChangeText={text => setProducto({ ...producto, descripcion: text })}
+      />
 
-        <Picker
-  selectedValue={producto.tipoMoneda}
-  onValueChange={val => setProducto({ ...producto, tipoMoneda: val })}
-  style={styles.picker}
-  dropdownIconColor="white"
-  itemStyle={{ color: 'white' }} // ✅ texto blanco en el desplegable
->
-  <Picker.Item label="DOLAR" value="DOLAR" />
-  <Picker.Item label="REAL" value="REAL" />
-</Picker>
+      <Picker
+        selectedValue={producto.tipoMoneda}
+        onValueChange={val => setProducto({ ...producto, tipoMoneda: val })}
+        style={styles.picker}
+        dropdownIconColor="white"
+        itemStyle={{ color: 'white' }}
+      >
+        <Picker.Item label="DOLAR" value="DOLAR" />
+        <Picker.Item label="REAL" value="REAL" />
+      </Picker>
 
+      <TextInput
+        style={styles.input}
+        placeholder="PRECIO"
+        placeholderTextColor="#aaa"
+        keyboardType="decimal-pad"
+        value={precioTexto}
+        onChangeText={text => {
+          const limpio = text.replace(',', '.');
+          setPrecioTexto(text);
+          const numero = parseFloat(limpio);
+          setProducto({ ...producto, precio: isNaN(numero) ? 0 : numero });
+        }}
+      />
 
-      <TextInput style={styles.input} placeholder="PRECIO" placeholderTextColor="#aaa" keyboardType="numeric" value={producto.precio.toString()} onChangeText={text => setProducto({ ...producto, precio: Number(text) })} />
-
-        <Picker
-  selectedValue={producto.proveedorId}
-  onValueChange={val => setProducto({ ...producto, proveedorId: val })}
-  style={styles.picker}
-  dropdownIconColor="white"
-  itemStyle={{ color: 'white' }} // ✅ texto blanco en el desplegable
->
-  <Picker.Item label="Seleccionar proveedor" value="" />
-  {proveedores.map(p => (
-    <Picker.Item key={p.id} label={p.nombre} value={p.id} />
-  ))}
-</Picker>
-
+      <Picker
+        selectedValue={producto.proveedorId}
+        onValueChange={val => setProducto({ ...producto, proveedorId: val })}
+        style={styles.picker}
+        dropdownIconColor="white"
+        itemStyle={{ color: 'white' }}
+      >
+        <Picker.Item label="Seleccionar proveedor" value="" />
+        {proveedores.map(p => (
+          <Picker.Item key={p.id} label={p.nombre} value={p.id} />
+        ))}
+      </Picker>
 
       <TouchableOpacity onPress={seleccionarImagen} style={styles.botonImagen}>
         <Text style={styles.botonTexto}>SELECCIONAR IMAGEN</Text>
@@ -223,11 +265,10 @@ const styles = StyleSheet.create({
   boton: { padding: 15, borderRadius: 5, alignItems: 'center', marginBottom: 10 },
   botonTexto: { color: 'white', fontWeight: 'bold' },
   botonImagen: { padding: 12, borderRadius: 5, alignItems: 'center', backgroundColor: '#444', marginBottom: 10 },
-  imagen: {width: '100%',aspectRatio: 1,marginBottom: 10,borderRadius: 5,},
+  imagen: { width: '100%', aspectRatio: 1, marginBottom: 10, borderRadius: 5 },
   modalFondo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
   modalContenido: { backgroundColor: 'white', borderRadius: 10, padding: 20, width: '80%' },
   modalTitulo: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
   modalTexto: { marginBottom: 5 },
   modalBotones: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 },
 });
-
