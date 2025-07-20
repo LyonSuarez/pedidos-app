@@ -3,7 +3,8 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const opciones = [
-  { label: 'Productos', ruta: 'productos' },           // Alta de productos para los pedidos
+  { label: 'Productos', ruta: 'productos' },           // Edicion de los productos
+  { label: 'Cargar Productos', ruta: 'cargar-producto' },   // Alta productos
   { label: 'Ver Pedidos', ruta: 'pedidos' },       // Ver pedidos realizados por clientes
   { label: 'Precios', ruta: 'modificar-precios' },     // Modificar precios de productos
   { label: 'Clientes', ruta: 'ver-clientes' },         // Añadir, buscar y editar clientes

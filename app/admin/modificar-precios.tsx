@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  guardarCotizacion,
+  obtenerUltimasCotizaciones,
+} from '../../lib/firestoreCotizaciones';
 
 export default function ModificarPrecios() {
   const [cotizacionDolar, setCotizacionDolar] = useState('');
@@ -8,35 +12,44 @@ export default function ModificarPrecios() {
   const [ultimaDolar, setUltimaDolar] = useState<{ fecha: string; precio: string } | null>(null);
   const [ultimaReal, setUltimaReal] = useState<{ fecha: string; precio: string } | null>(null);
 
-  const obtenerFecha = () => {
-    const ahora = new Date();
-    return ahora.toLocaleString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  // 🔄 Cargar desde Firebase al iniciar
+  useEffect(() => {
+    const cargarCotizaciones = async () => {
+      const data = await obtenerUltimasCotizaciones();
+      if (data.dolar) setUltimaDolar(data.dolar);
+      if (data.real) setUltimaReal(data.real);
+    };
+    cargarCotizaciones();
+  }, []);
 
-  const guardarDolar = () => {
+  const guardarDolar = async () => {
     if (!cotizacionDolar || isNaN(Number(cotizacionDolar))) {
       Alert.alert('Error', 'Ingresá una cotización válida para el dólar.');
       return;
     }
-    setUltimaDolar({ fecha: obtenerFecha(), precio: cotizacionDolar });
-    setCotizacionDolar('');
-    Alert.alert('Éxito', `Cotización del dólar guardada: $${cotizacionDolar}`);
+
+    const exito = await guardarCotizacion('dolar', cotizacionDolar);
+    if (exito) {
+      const ahora = new Date().toLocaleString('es-AR');
+      setUltimaDolar({ precio: cotizacionDolar, fecha: ahora });
+      setCotizacionDolar('');
+      Alert.alert('Éxito', `Cotización del dólar guardada: $${cotizacionDolar}`);
+    }
   };
 
-  const guardarReal = () => {
+  const guardarReal = async () => {
     if (!cotizacionReal || isNaN(Number(cotizacionReal))) {
       Alert.alert('Error', 'Ingresá una cotización válida para el real.');
       return;
     }
-    setUltimaReal({ fecha: obtenerFecha(), precio: cotizacionReal });
-    setCotizacionReal('');
-    Alert.alert('Éxito', `Cotización del real guardada: $${cotizacionReal}`);
+
+    const exito = await guardarCotizacion('real', cotizacionReal);
+    if (exito) {
+      const ahora = new Date().toLocaleString('es-AR');
+      setUltimaReal({ precio: cotizacionReal, fecha: ahora });
+      setCotizacionReal('');
+      Alert.alert('Éxito', `Cotización del real guardada: $${cotizacionReal}`);
+    }
   };
 
   return (

@@ -1,5 +1,5 @@
 import { Picker } from '@react-native-picker/picker';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -9,16 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-
-type Proveedor = {
-  id: string;
-  nombre: string;
-  telefono: string;
-  direccion: string;
-  pais: 'Paraguay' | 'Brasil';
-  correo?: string;
-  notas?: string;
-};
+import {
+  eliminarProveedorDeFirestore,
+  guardarProveedorEnFirestore,
+  obtenerProveedoresDesdeFirestore,
+  Proveedor,
+} from '../../lib/firestoreProveedores';
 
 export default function ProveedoresScreen() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
@@ -34,37 +30,53 @@ export default function ProveedoresScreen() {
     notas: '',
   });
 
+  // 🔄 Cargar proveedores desde Firebase al iniciar
+  useEffect(() => {
+    const cargar = async () => {
+      const data = await obtenerProveedoresDesdeFirestore();
+      setProveedores(data);
+    };
+    cargar();
+  }, []);
+
   const generarID = () => {
-    const num = proveedores.length + 1;
-    return num.toString().padStart(4, '0');
+    const ids = proveedores.map(p => parseInt(p.id)).filter(n => !isNaN(n));
+    const maxId = Math.max(0, ...ids);
+    return String(maxId + 1).padStart(4, '0');
   };
 
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     if (!nuevoProveedor.nombre || !nuevoProveedor.telefono || !nuevoProveedor.direccion) {
       Alert.alert('Error', 'Completa todos los campos obligatorios.');
       return;
     }
 
-    if (editandoId && editandoId !== 'nuevo') {
-      const actualizados = proveedores.map((prov) =>
-        prov.id === editandoId ? { ...nuevoProveedor, id: editandoId } : prov
-      );
-      setProveedores(actualizados);
-    } else {
-      const id = generarID();
-      setProveedores([...proveedores, { ...nuevoProveedor, id }]);
-    }
+    const id = editandoId && editandoId !== 'nuevo' ? editandoId : generarID();
+    const proveedorConId: Proveedor = { ...nuevoProveedor, id };
 
-    setNuevoProveedor({
-      id: '',
-      nombre: '',
-      telefono: '',
-      direccion: '',
-      pais: 'Paraguay',
-      correo: '',
-      notas: '',
-    });
-    setEditandoId(null);
+    const exito = await guardarProveedorEnFirestore(proveedorConId);
+
+    if (exito) {
+      const actualizados = [
+        ...proveedores.filter(p => p.id !== id),
+        proveedorConId
+      ].sort((a, b) => parseInt(a.id) - parseInt(b.id));
+
+      setProveedores(actualizados);
+      setNuevoProveedor({
+        id: '',
+        nombre: '',
+        telefono: '',
+        direccion: '',
+        pais: 'Paraguay',
+        correo: '',
+        notas: '',
+      });
+      setEditandoId(null);
+      Alert.alert('Proveedor guardado correctamente');
+    } else {
+      Alert.alert('Error', 'No se pudo guardar el proveedor.');
+    }
   };
 
   const handleEliminar = (id: string) => {
@@ -76,9 +88,15 @@ export default function ProveedoresScreen() {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            setProveedores(proveedores.filter((p) => p.id !== id));
-            setEditandoId(null);
+          onPress: async () => {
+            const exito = await eliminarProveedorDeFirestore(id);
+            if (exito) {
+              setProveedores(proveedores.filter(p => p.id !== id));
+              setEditandoId(null);
+              Alert.alert('Proveedor eliminado');
+            } else {
+              Alert.alert('Error', 'No se pudo eliminar el proveedor.');
+            }
           },
         },
       ]
