@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -12,6 +13,7 @@ import HeaderAdmin from '../../components/HeaderAdmin';
 import { actualizarAdmin, obtenerAdmin } from '../../lib/firestoreAdmin';
 
 export default function ConfiguracionScreen() {
+  const router = useRouter();
   const [admin, setAdmin] = useState({ username: '', name: '', password: '' });
   const [editandoNombre, setEditandoNombre] = useState(false);
   const [editandoPassword, setEditandoPassword] = useState(false);
@@ -72,6 +74,7 @@ export default function ConfiguracionScreen() {
 
   return (
     <View style={styles.container}>
+
       <HeaderAdmin titulo="CONFIGURACIÓN" />
 
       <View style={styles.campo}>
