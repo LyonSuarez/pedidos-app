@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import HeaderAdmin from '../../components/HeaderAdmin';
 import {
   eliminarProveedorDeFirestore,
   guardarProveedorEnFirestore,
@@ -127,6 +128,7 @@ export default function ProveedoresScreen() {
 
   return (
     <View style={styles.container}>
+      <HeaderAdmin titulo="PROVEEDORES" />
       <TextInput
         style={styles.input}
         placeholder="Buscar por nombre"

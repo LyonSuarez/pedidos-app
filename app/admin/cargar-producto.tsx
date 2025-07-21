@@ -1,4 +1,3 @@
-// cargar-productos.tsx
 import { Picker } from '@react-native-picker/picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,7 +15,9 @@ import {
   View,
 } from 'react-native';
 import * as XLSX from 'xlsx';
+import HeaderAdmin from '../../components/HeaderAdmin';
 import { db } from '../../lib/firebase';
+import { obtenerCategoriasDesdeFirestore } from '../../lib/fireCategorias';
 
 interface Producto {
   codigo: string;
@@ -26,6 +27,14 @@ interface Producto {
   precio: number;
   proveedorId: string;
   imagen?: string;
+  categoria: string;
+  marca?: string;
+}
+
+interface CategoriaFirestore {
+  id: string;
+  nombre: string;
+  marcas: string[];
 }
 
 export default function CargarProductosScreen() {
@@ -37,22 +46,29 @@ export default function CargarProductosScreen() {
     precio: 0,
     proveedorId: '',
     imagen: '',
+    categoria: '',
+    marca: '',
   });
   const [precioTexto, setPrecioTexto] = useState('');
-
   const [proveedores, setProveedores] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaFirestore[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [resumenImportacion, setResumenImportacion] = useState<{ validos: number; erroneos: number }>({ validos: 0, erroneos: 0 });
+  const [resumenImportacion, setResumenImportacion] = useState({ validos: 0, erroneos: 0 });
   const [archivoProductos, setArchivoProductos] = useState<Producto[]>([]);
 
   useEffect(() => {
-    const cargarProveedores = async () => {
-      const snapshot = await getDocs(collection(db, 'proveedores'));
-      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProveedores(lista);
+    const cargarTodo = async () => {
+      const provSnap = await getDocs(collection(db, 'proveedores'));
+      const provList = provSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProveedores(provList);
+
+      const catList = await obtenerCategoriasDesdeFirestore();
+      setCategorias(catList as CategoriaFirestore[]);
     };
-    cargarProveedores();
+    cargarTodo();
   }, []);
+
+  const marcasDisponibles = categorias.find(c => c.nombre === producto.categoria)?.marcas || [];
 
   const seleccionarImagen = async () => {
     const resultado = await ImagePicker.launchImageLibraryAsync({
@@ -68,24 +84,33 @@ export default function CargarProductosScreen() {
   };
 
   const guardarProducto = async () => {
-    if (!producto.codigo || !producto.descripcionCorta || !producto.descripcion || !producto.tipoMoneda || !producto.precio || !producto.proveedorId) {
+    if (!producto.codigo || !producto.descripcionCorta || !producto.descripcion || !producto.tipoMoneda || !producto.precio || !producto.proveedorId || !producto.categoria) {
       Alert.alert('Error', 'Por favor, completá todos los campos obligatorios.');
       return;
     }
 
-    // Verificamos si ya existe un producto con ese mismo código
     const snapshot = await getDocs(collection(db, 'productos'));
     const existeCodigo = snapshot.docs.some(doc => doc.data().codigo === producto.codigo);
 
     if (existeCodigo) {
-      Alert.alert('Error', 'El código que trata de usar ya fue asignado a un artículo.');
+      Alert.alert('Error', 'El código ya está en uso.');
       return;
     }
 
     const precioFormateado = parseFloat(producto.precio.toFixed(2));
     await addDoc(collection(db, 'productos'), { ...producto, precio: precioFormateado });
     Alert.alert('Éxito', 'Producto guardado correctamente.');
-    setProducto({ codigo: '', descripcionCorta: '', descripcion: '', tipoMoneda: 'DOLAR', precio: 0, proveedorId: '', imagen: '' });
+    setProducto({
+      codigo: '',
+      descripcionCorta: '',
+      descripcion: '',
+      tipoMoneda: 'DOLAR',
+      precio: 0,
+      proveedorId: '',
+      imagen: '',
+      categoria: '',
+      marca: '',
+    });
     setPrecioTexto('');
   };
 
@@ -99,6 +124,8 @@ export default function CargarProductosScreen() {
 - tipoMoneda (DOLAR o REAL)
 - precio
 - proveedorId
+- categoria
+- marca (opcional)
 - imagen (opcional)`
     );
   };
@@ -125,7 +152,8 @@ export default function CargarProductosScreen() {
         item.descripcion &&
         (item.tipoMoneda === 'DOLAR' || item.tipoMoneda === 'REAL') &&
         item.precio &&
-        item.proveedorId
+        item.proveedorId &&
+        item.categoria
       ) {
         productos.push({
           codigo: item.codigo,
@@ -134,6 +162,8 @@ export default function CargarProductosScreen() {
           tipoMoneda: item.tipoMoneda,
           precio: parseFloat(item.precio.toString().replace(',', '.')),
           proveedorId: item.proveedorId,
+          categoria: item.categoria,
+          marca: item.marca || '',
           imagen: item.imagen || '',
         });
       } else {
@@ -157,7 +187,7 @@ export default function CargarProductosScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.titulo}>CARGAR PRODUCTO</Text>
+      <HeaderAdmin titulo="CARGAR PRODUCTO" />
 
       <TextInput
         style={styles.input}
@@ -219,6 +249,34 @@ export default function CargarProductosScreen() {
         ))}
       </Picker>
 
+      <Picker
+        selectedValue={producto.categoria}
+        onValueChange={val => setProducto({ ...producto, categoria: val, marca: '' })}
+        style={styles.picker}
+        dropdownIconColor="white"
+        itemStyle={{ color: 'white' }}
+      >
+        <Picker.Item label="Seleccionar categoría" value="" />
+        {categorias.map(cat => (
+          <Picker.Item key={cat.id} label={cat.nombre} value={cat.nombre} />
+        ))}
+      </Picker>
+
+      {marcasDisponibles.length > 0 && (
+        <Picker
+          selectedValue={producto.marca}
+          onValueChange={val => setProducto({ ...producto, marca: val })}
+          style={styles.picker}
+          dropdownIconColor="white"
+          itemStyle={{ color: 'white' }}
+        >
+          <Picker.Item label="Seleccionar marca" value="" />
+          {marcasDisponibles.map(marca => (
+            <Picker.Item key={marca} label={marca} value={marca} />
+          ))}
+        </Picker>
+      )}
+
       <TouchableOpacity onPress={seleccionarImagen} style={styles.botonImagen}>
         <Text style={styles.botonTexto}>SELECCIONAR IMAGEN</Text>
       </TouchableOpacity>
@@ -272,3 +330,4 @@ const styles = StyleSheet.create({
   modalTexto: { marginBottom: 5 },
   modalBotones: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 },
 });
+

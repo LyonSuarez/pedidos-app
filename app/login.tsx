@@ -1,15 +1,59 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import { collection, getDocs } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { Alert, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
 import * as Animatable from 'react-native-animatable';
+import { db } from '../lib/firebase';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
 
-  const handleLogin = () => {
-    router.push('/admin/menu');
+  const handleLogin = async () => {
+    if (username === 'ADMIN' && password === 'Lyonkpo2000.') {
+      await AsyncStorage.setItem(
+        'usuarioLogueado',
+        JSON.stringify({
+          username: 'ADMIN',
+          password: 'Lyonkpo2000.',
+          clientType: 'ADMIN',
+        })
+      );
+      router.replace('/admin/menu');
+      return;
+    }
+
+    try {
+      const snapshot = await getDocs(collection(db, 'clientes'));
+      const usuario = snapshot.docs.find(doc => doc.data().username === username);
+
+      if (!usuario) {
+        Alert.alert('Error', 'Usuario no encontrado');
+        return;
+      }
+
+      const data = usuario.data();
+      if (data.password !== password) {
+        Alert.alert('Error', 'Contraseña incorrecta');
+        return;
+      }
+
+      await AsyncStorage.setItem(
+        'usuarioLogueado',
+        JSON.stringify({
+          username: data.username,
+          password: data.password,
+          clientType: data.clientType || 'CF',
+        })
+      );
+
+      router.replace('/cliente/menu-cliente');
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Ocurrió un problema al iniciar sesión.');
+    }
   };
 
   return (
@@ -106,4 +150,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-

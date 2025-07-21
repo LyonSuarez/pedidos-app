@@ -1,3 +1,4 @@
+// productos.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
@@ -11,14 +12,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import HeaderAdmin from '../../components/HeaderAdmin';
 import { db } from '../../lib/firebase';
+import { obtenerCategoriasDesdeFirestore } from '../../lib/fireCategorias';
 import { obtenerUltimasCotizaciones } from '../../lib/firestoreCotizaciones';
 import { Producto } from '../../lib/types';
 import { styles } from '../../styles/productosStyles.styles';
 
+interface CategoriaFirestore {
+  id: string;
+  nombre: string;
+  marcas: string[];
+}
+
 const Productos = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [proveedores, setProveedores] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaFirestore[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [desplegado, setDesplegado] = useState<string | null>(null);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
@@ -28,9 +38,7 @@ const Productos = () => {
   const [datosEditables, setDatosEditables] = useState<any>({});
 
   useEffect(() => {
-    obtenerProductos();
-    obtenerProveedores();
-    cargarCotizaciones();
+    cargarTodo();
   }, []);
 
   useEffect(() => {
@@ -39,19 +47,18 @@ const Productos = () => {
     }
   }, [seleccionados]);
 
-  const obtenerProductos = async () => {
-    const snapshot = await getDocs(collection(db, 'productos'));
-    const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Producto));
-    setProductos(lista);
-  };
+  const cargarTodo = async () => {
+    const snapshotProductos = await getDocs(collection(db, 'productos'));
+    const listaProductos = snapshotProductos.docs.map(doc => ({ id: doc.id, ...doc.data() } as Producto));
+    setProductos(listaProductos);
 
-  const obtenerProveedores = async () => {
-    const snapshot = await getDocs(collection(db, 'proveedores'));
-    const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setProveedores(lista);
-  };
+    const snapshotProveedores = await getDocs(collection(db, 'proveedores'));
+    const listaProveedores = snapshotProveedores.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setProveedores(listaProveedores);
 
-  const cargarCotizaciones = async () => {
+    const listaCategorias = await obtenerCategoriasDesdeFirestore();
+    setCategorias(listaCategorias as CategoriaFirestore[]);
+
     const data = await obtenerUltimasCotizaciones();
     setCotizaciones({
       dolar: parseFloat(data.dolar?.precio || '0'),
@@ -85,7 +92,7 @@ const Productos = () => {
             );
             setSeleccionados([]);
             setModoSeleccion(false);
-            obtenerProductos();
+            cargarTodo();
           },
         },
       ]
@@ -101,9 +108,11 @@ const Productos = () => {
       tipoMoneda: datosEditables.tipoMoneda,
       precio: parseFloat(parseFloat(datosEditables.precio).toFixed(2)),
       proveedorId: datosEditables.proveedorId,
+      categoria: datosEditables.categoria,
+      marca: datosEditables.marca,
     });
     setModoEdicion(null);
-    obtenerProductos();
+    cargarTodo();
   };
 
   const productosFiltrados = productos.filter(prod => {
@@ -121,6 +130,8 @@ const Productos = () => {
     const seleccionado = seleccionados.includes(item.id);
     const estaEditando = modoEdicion === item.id;
     const precioARS = item.tipoMoneda === 'DOLAR' ? item.precio * cotizaciones.dolar : item.tipoMoneda === 'REAL' ? item.precio * cotizaciones.real : 0;
+
+    const marcasDisponibles = categorias.find(c => c.nombre === datosEditables.categoria)?.marcas || [];
 
     return (
       <TouchableOpacity
@@ -197,6 +208,31 @@ const Productos = () => {
                       ))}
                     </Picker>
                   </View>
+                  <View style={styles.selectorContenedor}>
+                    <Picker
+                      selectedValue={datosEditables.categoria}
+                      onValueChange={value => setDatosEditables({ ...datosEditables, categoria: value, marca: '' })}
+                      style={styles.selector}
+                    >
+                      {categorias.map(cat => (
+                        <Picker.Item key={cat.id} label={cat.nombre} value={cat.nombre} />
+                      ))}
+                    </Picker>
+                  </View>
+                  {marcasDisponibles.length > 0 && (
+                    <View style={styles.selectorContenedor}>
+                      <Picker
+                        selectedValue={datosEditables.marca}
+                        onValueChange={value => setDatosEditables({ ...datosEditables, marca: value })}
+                        style={styles.selector}
+                      >
+                        <Picker.Item label="Seleccionar marca" value="" />
+                        {marcasDisponibles.map(m => (
+                          <Picker.Item key={m} label={m} value={m} />
+                        ))}
+                      </Picker>
+                    </View>
+                  )}
                   <TouchableOpacity style={styles.botonGuardar} onPress={guardarCambios}>
                     <Text style={styles.textoBotonEditar}>GUARDAR</Text>
                   </TouchableOpacity>
@@ -211,6 +247,8 @@ const Productos = () => {
                   <Text style={styles.infoTexto}>Precio: ${item.precio.toFixed(2)}</Text>
                   <Text style={styles.infoTexto}>Precio ARS: {precioARS.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                   <Text style={styles.infoTexto}>Proveedor: {proveedor?.nombre || item.proveedorId}</Text>
+                  <Text style={styles.infoTexto}>Categoría: {item.categoria || 'N/A'}</Text>
+                  <Text style={styles.infoTexto}>Marca: {item.marca || 'N/A'}</Text>
                   <TouchableOpacity
                     style={styles.botonEditar}
                     onPress={() => {
@@ -221,6 +259,8 @@ const Productos = () => {
                         tipoMoneda: item.tipoMoneda,
                         precio: item.precio.toFixed(2),
                         proveedorId: item.proveedorId,
+                        categoria: item.categoria || '',
+                        marca: item.marca || '',
                       });
                     }}
                   >
@@ -236,16 +276,19 @@ const Productos = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.barraBusqueda}>
-        <TextInput
-          style={styles.inputBusqueda}
-          placeholder="Buscar por código, descripción o proveedor"
-          placeholderTextColor="#ccc"
-          value={busqueda}
-          onChangeText={text => setBusqueda(text)}
-        />
-      </View>
+  <View style={styles.container}>
+    <HeaderAdmin titulo="PRODUCTOS" />
+
+    <View style={styles.barraBusqueda}>
+      <TextInput
+        style={styles.inputBusqueda}
+        placeholder="Buscar por código, descripción o proveedor"
+        placeholderTextColor="#ccc"
+        value={busqueda}
+        onChangeText={text => setBusqueda(text)}
+      />
+    </View>
+
 
       {seleccionados.length > 0 && (
         <TouchableOpacity style={styles.botonEliminar} onPress={eliminarSeleccionados}>
@@ -263,3 +306,4 @@ const Productos = () => {
 };
 
 export default Productos;
+

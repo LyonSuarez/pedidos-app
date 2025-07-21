@@ -2,15 +2,16 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Button,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Button,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import HeaderAdmin from '../../components/HeaderAdmin';
 import { guardarClienteEnFirestore, obtenerClientesDesdeFirestore } from '../../lib/firestoreClient';
 import { User } from '../../lib/users';
 
@@ -139,6 +140,7 @@ export default function VerClientes() {
 
   return (
     <View style={styles.container}>
+      <HeaderAdmin titulo="CLIENTES" />
       <View style={{ flexDirection: 'row', marginBottom: 12 }}>
         <TextInput
           placeholder="Buscar por nombre, ID o usuario"

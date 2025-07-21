@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import HeaderAdmin from '../../components/HeaderAdmin';
 import {
   guardarCotizacion,
   obtenerUltimasCotizaciones,
 } from '../../lib/firestoreCotizaciones';
+
 
 export default function ModificarPrecios() {
   const [cotizacionDolar, setCotizacionDolar] = useState('');
@@ -54,7 +56,7 @@ export default function ModificarPrecios() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>COTIZACION</Text>
+      <HeaderAdmin titulo="COTIZACIÓN" />
 
       {/* Última actualización */}
       <View style={styles.row}>

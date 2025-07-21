@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import HeaderAdmin from '../../components/HeaderAdmin';
 import { actualizarAdmin, obtenerAdmin } from '../../lib/firestoreAdmin';
 
 export default function ConfiguracionScreen() {
@@ -71,7 +72,7 @@ export default function ConfiguracionScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>CONFIGURACIÓN</Text>
+      <HeaderAdmin titulo="CONFIGURACIÓN" />
 
       <View style={styles.campo}>
         <Text style={styles.label}>Usuario:</Text>

@@ -1,7 +1,8 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  BackHandler,
   Image,
   ImageBackground,
   StyleSheet,
@@ -13,6 +14,7 @@ import * as Animatable from 'react-native-animatable';
 
 const opciones = [
   { label: 'Productos', ruta: 'productos' },
+  { label: 'Categorías', ruta: 'categorias' },
   { label: 'Cargar Productos', ruta: 'cargar-producto' },
   { label: 'Ver Pedidos', ruta: 'pedidos' },
   { label: 'Precios', ruta: 'modificar-precios' },
@@ -24,11 +26,25 @@ export default function MenuAdmin() {
   const router = useRouter();
   const [key, setKey] = useState(Date.now());
 
+  // 🔐 Verificación de rol
+  useEffect(() => {
+  const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+    return true; // bloquea el botón atrás
+  });
+
+  return () => backHandler.remove();
+}, []);
+
+
+
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       setKey(Date.now());
     }, [])
   );
+
+  // ... resto del código igual ...
+
 
   return (
     <ImageBackground

@@ -1,13 +1,16 @@
 export interface Producto {
-  id: string;
+  id: string; // 👈 necesario para listar, editar y seleccionar
   codigo: string;
   descripcionCorta: string;
-  descripcion: string; // <-- esta línea es la clave
+  descripcion: string;
   tipoMoneda: 'DOLAR' | 'REAL';
   precio: number;
   proveedorId: string;
   imagen?: string;
+  categoria: string;
+  marca: string;
 }
+
 export type Proveedor = {
   id: string;
   nombre: string;
@@ -18,3 +21,8 @@ export type Proveedor = {
   notas?: string;
 };
 
+export type ProductoEnCarrito = {
+  id: string;
+  nombre: string;
+  cantidad: number;
+};
